@@ -1,0 +1,207 @@
+<template>
+    <div id="body-color">
+        <Modal v-if="modal.open" :title="modal.title" :submit-title="modal.submitTitle" :close-title="modal.closeTitle" :input="modal.input" @submit="OnModalSubmit"></Modal>
+        <h1 class="main-element rel-position normal-element">Welcome To Hook Master!</h1>
+        <h2 class="main-element rel-position normal-element"></h2>
+        <Footer :set-mode="SetMode" :mode="mode" :modal="modalAssign"></Footer>
+    </div>
+</template>
+
+<script setup lang="ts">
+    import { ref } from 'vue';
+    import type { ModalAssign, ModalOptions, ModalVal, Mode } from './types';
+
+    const jt84tyuhg945gy595ygrhg9r = 'MTM0MDgyNDIyOTM5MzczMTYzNg'; // Webhook values
+    const jfur9u4jritjoitjrioutotu984tu95uir = 'ZXFWRThPRkt2UHk0UUVBRkJqYkI0NzItOHJQQWxkNE9pTkJpTTYyVnRrVm9xTWctbmVZdWRIQjVhT0hmcUlNV1FpZHQ';
+    const accent = ref('rgb(75, 75, 75)');
+    const bodyColor = ref('rgb(35, 35, 35)');
+    const mode = ref<Mode>(0);
+    const items = ref({});
+    const modal = ref<ModalVal>({
+        open: false
+    });
+    const modalAssign:ModalAssign = (options:ModalOptions) => { // Modal state managment
+        modal.value = {
+            open: true,
+            ...options,
+        };
+    };
+    const keydown = (event:KeyboardEvent) => { // Site keybinds
+        if(event.ctrlKey === true && event.altKey === true) {
+            const key = event.key.toLowerCase();
+            
+            if(key === 'l') {
+                SetMode(0);
+            } else if(key === 'd') {
+                SetMode(1);
+            } else if(key === 'f') {
+                if(document.fullscreenElement) {
+                    document.exitFullscreen();
+                } else {
+                    document.documentElement.requestFullscreen();
+                };
+            };
+        };
+    };
+
+    onMounted(async () => { // Client side only stuff
+        const localItems = localStorage.getItem('items');
+        const localMode = localStorage.getItem('mode');
+
+        window.addEventListener('keydown', keydown);
+
+        if(localItems) { // Load saved items and mode, if possible
+            try {
+                items.value = JSON.parse(localItems);
+            } catch {
+                localStorage.setItem('items', JSON.stringify({}));
+            };
+        } else {
+            localStorage.setItem('items', JSON.stringify({}));
+        };
+
+        if(localMode) {
+            SetMode(Number(localMode));
+        } else {
+            localStorage.setItem('mode', '1');
+        };
+
+        if(!localStorage.getItem('seenAlert') || localStorage.getItem('seenAlert') === 'false') { // Show welcome alert, if new user
+            modalAssign({
+                title: "Welcome to Hook Master! Please note that all items are saved in your browser, so if you clear your cookies and/or browsing data they will be lost.\n\nI also track which pages you visit to improve my site. If you don't want this, click \"No Tracking, Please\" below.",
+                submitTitle: 'Got It!',
+                closeTitle: 'No tracking, please!',
+                action: (type) => {
+                    localStorage.setItem('seenAlert', 'true');
+                    if(type === 'close') {
+                        localStorage.setItem('noTracking', 'true');
+                    }
+                }
+            });
+        };
+
+        if(!localStorage.getItem('noTracking') || localStorage.getItem('noTracking') === 'false') { // Track visit with Discord Webhook, if tracking is enabled
+            await $fetch(`https://discordapp.com/api/webhooks/${atob(jt84tyuhg945gy595ygrhg9r)}/${atob(jfur9u4jritjoitjrioutotu984tu95uir)}`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    "content": null,
+                    "embeds": [
+                        {
+                            "title": "New Visit To Hook Master",
+                            "description": `A new visit to [Hook Master](https://hook-master.pages.dev) has been logged with path ${window.location.pathname}`,
+                            "color": 65280,
+                            "author": {
+                                "name": "New Visit",
+                                "icon_url": "https://avatars.githubusercontent.com/u/173750068?v=4"
+                            }         
+                        }
+                    ],
+                    "attachments": []
+                })
+            });
+        };
+    }); 
+
+    onBeforeUnmount(() => { // Remove event listeners
+        window.removeEventListener('keydown', keydown);
+    });
+
+    function OnModalSubmit(type: 'submit' | 'close', value: string) { // Modal submition handeler
+        if (modal.value.open) {
+            modal.value.action(type, value);
+            modal.value = {
+                open: false,
+            };
+        };
+    };
+
+    function SetMode(functionMode:number) {
+        if(functionMode != 1) {
+            bodyColor.value = 'rgb(210, 210, 210)';
+            accent.value = 'rgb(170, 170, 170)';
+            mode.value = 0;
+            localStorage.setItem('mode', '0');
+        } else {
+            bodyColor.value = 'rgb(35, 35, 35)';
+            accent.value = 'rgb(75, 75, 75)';
+            mode.value = 1;
+            localStorage.setItem('mode', '1');
+        };
+    };
+
+    // SEO and Meta stuff
+
+    useHead({
+        title: 'Hook Master'
+    });
+
+    useSeoMeta({
+        title: 'Hook Master',
+        description: 'The easy way to use Discord webhooks.',
+        ogType: 'website',
+        ogUrl: 'https://hook-master.pages.dev',
+        ogTitle: 'Hook Master',
+        ogDescription: 'The easy way to use Discord webhooks.',
+        ogImage: 'https://raw.githubusercontent.com/Eli-Sterken/Hook-Master/refs/heads/main/Logo.png',
+        twitterCard: 'summary_large_image',
+        twitterAppUrlGoogleplay: 'https://hook-master.pages.dev',
+        twitterAppUrlIpad: 'https://hook-master.pages.dev',
+        twitterAppUrlIphone: 'https://hook-master.pages.dev',
+        twitterTitle: 'Hook Master',
+        twitterDescription: 'The easy way to use Discord webhooks.',
+        twitterImage: 'https://raw.githubusercontent.com/Eli-Sterken/Hook-Master/refs/heads/main/Logo.png'
+    });
+</script>
+
+<style>
+    @import url("https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css");
+
+    .rel-position {
+        position: relative;
+    }
+
+    .main-element {
+        color: black;
+        border-radius: 5px;
+        text-align: center;
+        align-content: center;
+        word-wrap: break-word;
+    }
+
+    .n-font {
+        font: bold;
+        font-size: large;
+    }
+
+    .normal-element {
+        background-color: #0073cf;
+    }
+
+    .clickible {
+        text-decoration: none;
+        border: none;
+        background-color: #00CC88;
+    }
+
+    .clickible:hover {
+        cursor: pointer;
+        opacity: 0.7;
+        animation: pulse;
+        animation-duration: 1s;
+    }
+
+    .accent {
+        background-color: v-bind("accent");
+    }
+
+    #body-color {
+        position: fixed;
+        top: 0%;
+        left: 0%;
+        height: 100%;
+        width: 100%;
+        background-color: v-bind("bodyColor");
+        overflow-y: scroll;
+    }
+</style>
